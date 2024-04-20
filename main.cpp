@@ -6,39 +6,6 @@
 using namespace std;
 
 template <typename T>
-class bitMask{
-public:
-    T mask;
-    int size = sizeof(T);
-    bitMask(){
-        mask = 1;
-    }
-
-    void setLastBit(){
-        mask = 1;
-    }
-
-    void setFirstBit(){
-        mask = 1 << (size * 8 - 1);
-    }
-    void left(){
-        mask = mask << 1;
-        if(mask == 0){
-            mask = 1;
-        }
-    }
-
-    void right(){
-        mask = mask >> 1;
-        if(mask == 0){
-            mask =  1 << (size * 8 - 1);
-        }
-    }
-
-
-};
-
-template <typename T>
 vector<short> convertTo16bit(vector<T> samples){
     int size = samples.size();
     vector<short>  converted;
@@ -89,7 +56,7 @@ bool testDecode(vector<T> original, vector<T> decoded){
 
     for(int i = 0; i<size; i++){
         if(original[i] !=decoded[i]){
-            cout<<"Failed: Sample nr "<<i<<" in decoded data not equal to original"<<endl;
+            cout<<"Failed: Sample nr "<<i<<" in decoded data "<<decoded[i]<<" not equal to original "<<original[i]<<endl;
             return false;
         }
     }
@@ -197,11 +164,14 @@ void writeUnary(ofstream& stream, unsigned int u){
     writeBit(stream,true);
 }
 
+
 void writeBinary(ofstream& stream, unsigned int v, unsigned int bits){
-    unsigned int bitPos = (1<<bits);
+    unsigned int bitPos = (1<<(bits-1));
+    bool bit;
     for(int i = 0; i < bits; i++){
-        writeBit(stream, (bool)(bitPos & v));
-        bitPos>>=1;
+        bit = (v&bitPos);
+        writeBit(stream, bit);
+        bitPos = bitPos >> 1;
     }
 }
 
@@ -232,7 +202,9 @@ unsigned long long encodeRice(vector<T> samples, const string& name){
         v = sample - u*twoPowk;
         writeBinary(outFile, v,k);
         bitsLength+=u+k+1;
+
     }
+
     char bitsNeeded =(char) (bitsLength%8);
     for(char i = 0; i<bitsNeeded; i++){
         writeBit(outFile,false);
@@ -243,6 +215,74 @@ unsigned long long encodeRice(vector<T> samples, const string& name){
 
 }
 
+
+//return: 2 - eof; 0 - zero binary; 1 - one binary
+char readBit(istream& stream){
+    static unsigned char currentByte = 0;
+    static char bitPos = 0;
+
+    if(bitPos==0){
+        currentByte = stream.get();
+        if(stream.eof()){
+            return 2;
+        }
+    }
+    char bit = (currentByte>>bitPos)&1;
+
+    bitPos++;
+    if(bitPos>=8) bitPos = 0;
+
+    return bit;
+
+}
+
+
+vector<unsigned short > decodeRice(const string & fileName){
+    ifstream inFile(".//datFiles//"+fileName+".dat", ios::binary);
+
+    if (!inFile.is_open()) {
+        throw std::ios_base::failure("Error opening file for reading.");
+    }
+
+    unsigned long long allocationSize;
+
+    inFile.read(reinterpret_cast<char *>(&allocationSize),sizeof(allocationSize));
+    char k;
+    inFile.read(reinterpret_cast<char *>(&k),sizeof(k));
+
+    vector<unsigned short> decoded;
+    decoded.reserve(allocationSize);
+
+    unsigned int u = 0;
+    unsigned int v = 0;
+    char bit;
+    char vBitPos;
+    unsigned short n;
+
+    while(true) {
+        u = 0;
+        bit = readBit(inFile);
+        while(bit == 0){
+            u++;
+
+            bit = readBit(inFile);
+        }
+        if(bit == 2){
+            break;
+        }
+        vBitPos = k-1;
+        v = 0;
+        for(char i = 0; i<k;i++){
+            bit = readBit(inFile);
+            v |= (bit<<vBitPos);
+            vBitPos--;
+        }
+        n = u * pow(2, k) + v;
+        decoded.push_back(n);
+    }
+
+    return decoded;
+}
 
 
 
@@ -263,14 +303,18 @@ int main() {
 
     auto test = testDecode(converted,decoded);
 
-    cout<<endl<<zeroOrderEntropy(converted)<<endl;
 
 
     auto unsignedDifferentialSamples = convertToUnsigned(encoded);
 
     auto encodedRice = encodeRice(unsignedDifferentialSamples,"ATrain");
 
-    cout<<encodedRice<<endl;
+
+    auto decodedRice = decodeRice("ATrain");
+
+
+
+    testDecode(unsignedDifferentialSamples,decodedRice);
 
 
 
