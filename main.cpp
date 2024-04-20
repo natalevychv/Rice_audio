@@ -170,11 +170,80 @@ double findDistributionRice(vector<T> samples){
     return (s-1)/s;
 }
 
+void writeBit(ofstream& file, bool bit){
+    static unsigned char currentByte = 0;
+    static char bitPos = 0;
+
+    if(bit){
+        currentByte |= (1 << bitPos);
+    }
+
+    bitPos++;
+    if(bitPos == 8){
+        file.put(currentByte);
+        currentByte = 0;
+        bitPos = 0;
+    }
+}
+
+char kValueRice(double p){
+    return ceil(log2((log2((sqrt(5)-1)/2))/log2(p)));
+}
+
+void writeUnary(ofstream& stream, unsigned int u){
+    for(unsigned int i = 0; i<u;i++){
+        writeBit(stream,false);
+    }
+    writeBit(stream,true);
+}
+
+void writeBinary(ofstream& stream, unsigned int v, unsigned int bits){
+    unsigned int bitPos = (1<<bits);
+    for(int i = 0; i < bits; i++){
+        writeBit(stream, (bool)(bitPos & v));
+        bitPos>>=1;
+    }
+}
 
 template <typename T>
-void encodeRice(vector<T> samples){
+unsigned long long encodeRice(vector<T> samples, const string& name){
+    ofstream outFile(".//datFiles//"+name+".dat", ios::binary);
+
+    if (!outFile.is_open()) {
+        cerr << "Error opening file!" << endl;
+        return 0;
+    }
+
+    unsigned long long bitsLength = 0;
+    auto k = kValueRice(findDistributionRice(samples));
+    unsigned long long originalSize = samples.size();
+
+    if(k>15) k = 15;
+    outFile.write(reinterpret_cast<const char *> (&originalSize),sizeof(originalSize));
+    outFile.put(k);
+
+    auto twoPowk = pow(2,k);
+    unsigned int u = 0;
+    unsigned int v = 0;
+
+    for(auto sample:samples){
+        u = floor(sample/twoPowk);
+        writeUnary(outFile,u);
+        v = sample - u*twoPowk;
+        writeBinary(outFile, v,k);
+        bitsLength+=u+k+1;
+    }
+    char bitsNeeded =(char) (bitsLength%8);
+    for(char i = 0; i<bitsNeeded; i++){
+        writeBit(outFile,false);
+    }
+    outFile.close();
+
+    return bitsLength;
 
 }
+
+
 
 
 
@@ -196,7 +265,13 @@ int main() {
 
     cout<<endl<<zeroOrderEntropy(converted)<<endl;
 
-    auto bit = * new bitMask<unsigned short>();
+
+    auto unsignedDifferentialSamples = convertToUnsigned(encoded);
+
+    auto encodedRice = encodeRice(unsignedDifferentialSamples,"ATrain");
+
+    cout<<encodedRice<<endl;
+
 
 
     return 0;
