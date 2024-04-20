@@ -96,7 +96,10 @@
 			"name" : "Header Files",
 			"sourceIndexes" : 
 			[
-				1
+				1,
+				2,
+				3,
+				4
 			]
 		}
 	],
@@ -111,6 +114,21 @@
 		{
 			"backtrace" : 1,
 			"path" : "AudioFile.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "encoders-decoders.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "writers-readers-converters.h",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"path" : "stats.h",
 			"sourceGroupIndex" : 1
 		}
 	],
