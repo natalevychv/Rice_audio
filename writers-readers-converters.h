@@ -51,9 +51,15 @@ std::vector<short> convertToSigned(std::vector<unsigned short>  unsignedSamples)
 
 
 
-void writeBit(std::ofstream& file, bool bit){
+void writeBit(std::ofstream& file, bool bit, bool eof){
     static unsigned char currentByte = 0;
     static char bitPos = 0;
+    if(eof){
+        file.put(currentByte);
+        currentByte = 0;
+        bitPos = 0;
+        return;
+    }
 
     if(bit){
         currentByte |= (1 << bitPos);
@@ -70,9 +76,9 @@ void writeBit(std::ofstream& file, bool bit){
 
 void writeUnary(std::ofstream& stream, unsigned int u){
     for(unsigned int i = 0; i<u;i++){
-        writeBit(stream,false);
+        writeBit(stream,false,false);
     }
-    writeBit(stream,true);
+    writeBit(stream,true,false);
 }
 
 
@@ -81,7 +87,7 @@ void writeBinary(std::ofstream& stream, unsigned int v, unsigned int bits){
     bool bit;
     for(int i = 0; i < bits; i++){
         bit = (v&bitPos);
-        writeBit(stream, bit);
+        writeBit(stream, bit,false);
         bitPos = bitPos >> 1;
     }
 }

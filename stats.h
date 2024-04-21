@@ -17,21 +17,36 @@
 
 template <typename T>
 bool testDecode(std::vector<T> original, std::vector<T> decoded){
+    bool numberOfFail = false;
     int size = original.size();
     if(size != decoded.size()){
         std::cout<<"Failed: decoded size not equals original size"<<std::endl;
         return false;
     }
-
+    int problems = 0;
+    if(!numberOfFail){
     for(int i = 0; i<size; i++){
         if(original[i] !=decoded[i]){
-            std::cout<<"Failed: Sample nr "<<i<<" in decoded data "<<decoded[i]<<" not equal to original "<<original[i]<<std::endl;
+            std::cout<<"Failed: Sample nr "<<i<<" in decoded data "<<decoded[i]<<" not equal to original "<<original[i]<<". Length: "<<size<<std::endl;
             return false;
         }
+    }
+    }else{
+        for(int i = 0; i<size; i++){
+            if(original[i] !=decoded[i]){
+                problems++;
+            }
+        }
+    }
+    if(problems > 0){
+        std::cout<<"Failed: "<<problems<<" problems." <<std::endl;
+        return false;
     }
 
     std::cout<<"Success: Decoded data equals original "<<std::endl;
     return true;
+
+
 }
 
 

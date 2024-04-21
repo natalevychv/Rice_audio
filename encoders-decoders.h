@@ -45,7 +45,7 @@ std::vector<T> decodeDifferential(std::vector<T> encodedSamples){
 
 
 template <typename T>
-unsigned long long encodeRice(std::vector<T> samples, const std::string& name){
+unsigned long long encodeRice(std::vector<T> samples,const std::string & name){
     std::ofstream outFile(".//datFiles//"+name+".dat", std::ios::binary);
 
     if (!outFile.is_open()) {
@@ -53,13 +53,14 @@ unsigned long long encodeRice(std::vector<T> samples, const std::string& name){
         return 0;
     }
 
-    unsigned long long bitsLength = 0;
+
     auto k = kValueRice(findDistributionRice(samples));
     unsigned long long originalSize = samples.size();
 
     if(k>15) k = 15;
     outFile.write(reinterpret_cast<const char *> (&originalSize),sizeof(originalSize));
     outFile.put(k);
+    unsigned long long bitsLength = sizeof(k) + sizeof(originalSize);
 
     auto twoPowk = pow(2,k);
     unsigned int u = 0;
@@ -73,11 +74,7 @@ unsigned long long encodeRice(std::vector<T> samples, const std::string& name){
         bitsLength+=u+k+1;
 
     }
-
-    char bitsNeeded =(char) (bitsLength%8);
-    for(char i = 0; i<bitsNeeded; i++){
-        writeBit(outFile,false);
-    }
+    writeBit(outFile, false,true);
     outFile.close();
 
     return bitsLength;
@@ -85,7 +82,7 @@ unsigned long long encodeRice(std::vector<T> samples, const std::string& name){
 }
 
 
-std::vector<unsigned short > decodeRice(const std::string & fileName){
+std::vector<unsigned short > decodeRice( const std::string & fileName){
     std::ifstream inFile(".//datFiles//"+fileName+".dat", std::ios::binary);
 
     if (!inFile.is_open()) {
@@ -95,8 +92,7 @@ std::vector<unsigned short > decodeRice(const std::string & fileName){
     unsigned long long allocationSize;
 
     inFile.read(reinterpret_cast<char *>(&allocationSize),sizeof(allocationSize));
-    char k;
-    inFile.read(reinterpret_cast<char *>(&k),sizeof(k));
+    char k =(char) inFile.get();
 
     std::vector<unsigned short> decoded;
     decoded.reserve(allocationSize);
@@ -125,9 +121,10 @@ std::vector<unsigned short > decodeRice(const std::string & fileName){
             v |= (bit<<vBitPos);
             vBitPos--;
         }
-        n = u * pow(2, k) + v;
+        n = u *( pow(2, k)) + v;
         decoded.push_back(n);
     }
+    inFile.close();
 
     return decoded;
 }
