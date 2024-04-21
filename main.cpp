@@ -2,6 +2,7 @@
 
 #include "AudioFile.h"
 #include "encoders-decoders.h"
+#include <filesystem>
 
 
 struct Information {
@@ -15,18 +16,49 @@ struct Information {
 } ;
 
 void printInfo(const std::vector<Information> & information){
-    printf("\tName\t\tEntropy Left\t Entropy Right\t  Entropy\t Average Bit Length\t Efficiency\n\t");
-    for(int i = 0; i<100; i++){
+    printf("\tName\t\t\tEntropy Left\t Entropy Right\t  Entropy\t Average Bit Length\t Efficiency\n\t");
+    for(int i = 0; i<108; i++){
+        printf("-");
+    }
+
+    Information summary;
+    summary.name = "Mean";
+    printf("\n");
+    for(auto info:information){
+
+        summary.entropy +=info.entropy;
+        summary.entropyLeft+=info.entropyLeft;
+        summary.entropyRight +=info.entropyRight;
+        summary.averageBitLength += info.averageBitLength;
+        summary.efficiency +=info.efficiency;
+
+
+        printf("\t%s",info.name.c_str());
+        for(char i =0; i < (24 -info.name.size()); i++ ){
+            printf(" ");
+        }
+        printf("%f\t %f  \t  %f\t     %f\t \t %f %\n",info.entropyLeft,info.entropyRight,info.entropy,info.averageBitLength,info.efficiency);
+    }
+
+    summary.entropy /= information.size();
+    summary.entropyLeft /= information.size();
+    summary.entropyRight /= information.size();
+    summary.averageBitLength/=information.size();
+    summary.efficiency /=information.size();
+
+    printf("\n\t");
+    for(int i = 0; i<108; i++){
         printf("-");
     }
     printf("\n");
-    for(auto info:information){
-        printf("\t%s",info.name.c_str());
-        if(info.name.size() <7){
-            printf("\t");
-        }
-        printf("\t%f\t %f  \t  %f\t     %f\t \t %f %\n",info.entropyLeft,info.entropyRight,info.entropy,info.averageBitLength,info.efficiency);
+
+    printf("\t%s",summary.name.c_str());
+    for(char i =0; i < (24 -summary.name.size()); i++ ){
+        printf(" ");
     }
+    printf("%f\t %f  \t  %f\t     %f\t \t %f %\n",summary.entropyLeft,summary.entropyRight,summary.entropy,summary.averageBitLength,summary.efficiency);
+
+
 }
 
 Information testRice(AudioFile<double> audioFile , const std::string & audioFileName){
@@ -45,7 +77,7 @@ Information testRice(AudioFile<double> audioFile , const std::string & audioFile
 
     auto decodedRice = decodeRice(audioFileName);
     auto decodeRiceDifferential = decodeDifferential(convertToSigned(decodedRice));
-    printf("File %s.wav left channel Rice`a decode test: ",audioFileName.c_str());
+    printf("File %s left channel Rice`a decode test: ",audioFileName.c_str());
     testDecode(converted,decodeRiceDifferential);
 
 
@@ -60,7 +92,7 @@ Information testRice(AudioFile<double> audioFile , const std::string & audioFile
      auto decodedRiceR = decodeRice(audioFileName+"R");
      auto convertedToSignedR = convertToSigned(decodedRiceR);
      auto decodeRiceDifferentialR = decodeDifferential(convertedToSignedR);
-    printf("File %s.wav right channel Rice`a decode test: ",audioFileName.c_str());
+    printf("File %s right channel Rice`a decode test: ",audioFileName.c_str());
 
      testDecode(convertedR,decodeRiceDifferentialR);
 
@@ -88,24 +120,35 @@ int main() {
 
     audioFile.load(".//audio//Layla.wav");
 
+    std::filesystem::path directoryPath = ".//audio";
 
+    if(std::filesystem::exists(directoryPath) && std::filesystem::is_directory(directoryPath)){
+        for(const auto & entry : std::filesystem::directory_iterator(directoryPath)){
+            audioFile.load(entry.path().string());
+            information.push_back(testRice(audioFile,entry.path().filename().string()));
+        }
+    } else{
+        std::cerr << "Directory does not exist or is not a directory!" <<std::endl;
+    }
 
-    information.push_back(testRice(audioFile,"Layla"));
-
-    audioFile.load(".//audio//velvet.wav");
-    information.push_back(testRice(audioFile,"velvet"));
-
-    audioFile.load(".//audio//ATrain.wav");
-    information.push_back(testRice(audioFile,"ATrain"));
-
-    audioFile.load(".//audio//female_speech.wav");
-    information.push_back(testRice(audioFile,"female_speech"));
-
-    audioFile.load(".//audio//male_speech.wav");
-    information.push_back(testRice(audioFile,"male_speech"));
-
-    audioFile.load(".//audio//TomsDiner.wav");
-    information.push_back(testRice(audioFile,"TomsDiner"));
+//
+//
+//    information.push_back(testRice(audioFile,"Layla"));
+//
+//    audioFile.load(".//audio//velvet.wav");
+//    information.push_back(testRice(audioFile,"velvet"));
+//
+//    audioFile.load(".//audio//ATrain.wav");
+//    information.push_back(testRice(audioFile,"ATrain"));
+//
+//    audioFile.load(".//audio//female_speech.wav");
+//    information.push_back(testRice(audioFile,"female_speech"));
+//
+//    audioFile.load(".//audio//male_speech.wav");
+//    information.push_back(testRice(audioFile,"male_speech"));
+//
+//    audioFile.load(".//audio//TomsDiner.wav");
+//    information.push_back(testRice(audioFile,"TomsDiner"));
 
 
     printInfo(information);
