@@ -23,6 +23,27 @@ std::vector<short> convertTo16bit(std::vector<T> samples){
     return converted;
 }
 
+template <typename T>
+std::vector<std::vector<short>> convertTo16bit(std::vector<std::vector<T>> samples){
+    int size = samples[0].size();
+    std::vector<std::vector<short>>  converted(2, std::vector<short>(size));
+
+    bool isLeft = true;
+
+    for (auto channel: samples){
+        for(auto sample:channel){
+            if(isLeft)
+                converted[0].push_back(round(sample * pow(2,15)));
+            else
+                converted[1].push_back(round(sample * pow(2,15)));
+            isLeft = !isLeft;
+        }
+    }
+
+
+    return converted;
+}
+
 
 template <typename T>
 std::vector<unsigned short> convertToUnsigned(std::vector<T> samples){
@@ -31,7 +52,32 @@ std::vector<unsigned short> convertToUnsigned(std::vector<T> samples){
     unsignedSamples.reserve(size);
 
     for(auto sample: samples){
-        unsignedSamples.push_back(sample >=0 ? sample*2 : sample *(-2) -1);
+        unsignedSamples.push_back(sample >=0 ? (sample<<1) : -(sample<<1) -1);
+    }
+    return unsignedSamples;
+}
+
+
+
+template <typename T>
+std::vector<std::vector<unsigned short>>  convertToUnsigned(std::vector<std::vector<T>> samples){
+    int size = samples[0].size();
+    std::vector<std::vector<unsigned short>> unsignedSamples;
+
+    bool isLeft = true;
+    unsignedSamples[0].reserve(size);
+    unsignedSamples[1].reserve(size);
+
+
+    for(const auto channel: samples){
+
+        for(auto sample: channel){
+            if(isLeft)
+                unsignedSamples[0].push_back(sample >=0 ? (sample<<1) : -(sample<<1) -1);
+            else
+                unsignedSamples[1].push_back(sample >=0 ? (sample<<1) : -(sample<<1) -1);
+            isLeft = !isLeft;
+        }
     }
     return unsignedSamples;
 }
@@ -43,11 +89,35 @@ std::vector<short> convertToSigned(std::vector<unsigned short>  unsignedSamples)
     signedSamples.reserve(size);
 
     for(auto sample:unsignedSamples){
-        signedSamples.push_back((sample & 1) ? -(sample+1)/2 : sample/2);
+        signedSamples.push_back((sample & 1) ? -(sample+1)>>1 : sample>>1);
     }
 
     return signedSamples;
 }
+
+std::vector<std::vector<short>> convertToSigned(std::vector<std::vector<unsigned short>>  unsignedSamples){
+    unsigned int size = unsignedSamples[0].size();
+    std::vector<std::vector<short>> signedSamples{};
+
+    signedSamples[0].reserve(size);
+    signedSamples[1].reserve(size);
+
+    bool isLeft = true;
+
+
+    for(const auto  & channel: unsignedSamples) {
+        for (const auto & sample: channel) {\
+            if(isLeft)
+                signedSamples[0].push_back((sample & 1) ? -(sample + 1) >> 1 : sample >> 1);
+            else
+                signedSamples[1].push_back((sample & 1) ? -(sample + 1) >> 1 : sample >> 1);
+            isLeft = !isLeft;
+        }
+    }
+
+    return signedSamples;
+}
+
 
 
 
