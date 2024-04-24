@@ -49,6 +49,47 @@ bool testDecode(std::vector<T> original, std::vector<T> decoded){
 
 }
 
+template <typename T>
+bool testDecode(std::vector<std::vector<T>> original, std::vector<std::vector<T>> decoded){
+    bool numberOfFail = false;
+    int size = original[0].size();
+    if(size != decoded[0].size()){
+        std::cout<<"Failed: decoded size  in  left channel not equals original size"<<std::endl;
+        return false;
+    }
+    if(size != decoded[1].size()){
+        std::cout<<"Failed: decoded size in right channel not equals original size"<<std::endl;
+        return false;
+    }
+    int problems = 0;
+    if(!numberOfFail) {
+        for (char channel = 0; channel < 2; channel++) {
+            for (int i = 0; i < size; i++) {
+                if (original[channel][i] != decoded[channel][i]) {
+                    std::cout << "Failed: Sample nr " << i << " in channel "<<channel<<" in decoded data " << decoded[channel][i] << " not equal to original "
+                            << original[channel][i] << ". Length: " << size << std::endl;
+                    return false;
+                }
+            }
+        }
+    }else{
+        for(int i = 0; i<size; i++){
+            if(original[i] !=decoded[i]){
+                problems++;
+            }
+        }
+    }
+    if(problems > 0){
+        std::cout<<"Failed: "<<problems<<" problems." <<std::endl;
+        return false;
+    }
+
+    std::cout<<"Success: Decoded data equals original "<<std::endl;
+    return true;
+
+
+}
+
 
 template <typename T>
 std::map<T,double> findDistribution(std::vector<T> samples){

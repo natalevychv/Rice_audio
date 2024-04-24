@@ -16,7 +16,7 @@ struct Information {
 } ;
 
 void printInfo(const std::vector<Information> & information){
-    printf("\tName\t\t\tEntropy Left\t Entropy Right\t  Entropy\t Average Bit Length\t Efficiency\n\t");
+    printf("\tName\t\t\tEntropy Left\t Entropy Right\t  Entropy\t Average Bits Length\t Efficiency\n\t");
     for(int i = 0; i<108; i++){
         printf("-");
     }
@@ -75,26 +75,25 @@ Information testRice(AudioFile<double> audioFile , const std::string & audioFile
 
     auto encodedRiceLeft = encodeRice(unsignedDifferentialSamples,audioFileName);
 
-    auto decodedRice = decodeRice(audioFileName);
+    auto decodedRice = decodeRiceMono(audioFileName);
     auto decodeRiceDifferential = decodeDifferential(convertToSigned(decodedRice));
     printf("File %s left channel Rice`a decode test: ",audioFileName.c_str());
     testDecode(converted,decodeRiceDifferential);
 
 
-   auto convertedR = convertTo16bit(audioFile.samples[1]);
+    converted = convertTo16bit(audioFile.samples[1]);
 
-   auto encodedDifferentialR = encodeDifferential(convertedR);
-    information.entropyRight = zeroOrderEntropy(encodedDifferentialR);
+    encodedDifferential = encodeDifferential(converted);
+    information.entropyRight = zeroOrderEntropy(encodedDifferential);
 
-    auto unsignedDifferentialSamplesR = convertToUnsigned(encodedDifferentialR);
+    unsignedDifferentialSamples = convertToUnsigned(encodedDifferential);
 
-    auto encodedRiceRight = encodeRice(unsignedDifferentialSamplesR,audioFileName+"R");
-     auto decodedRiceR = decodeRice(audioFileName+"R");
-     auto convertedToSignedR = convertToSigned(decodedRiceR);
-     auto decodeRiceDifferentialR = decodeDifferential(convertedToSignedR);
+     auto encodedRiceRight = encodeRice(unsignedDifferentialSamples,audioFileName+"R");
+    decodedRice = decodeRiceMono(audioFileName+"R");
+    decodeRiceDifferential = decodeDifferential(convertToSigned(decodedRice));
     printf("File %s right channel Rice`a decode test: ",audioFileName.c_str());
 
-     testDecode(convertedR,decodeRiceDifferentialR);
+     testDecode(converted,decodeRiceDifferential);
 
     information.averageBitLength = (double)(encodedRiceLeft+encodedRiceRight)/(2*audioFile.getNumSamplesPerChannel());
 
@@ -109,6 +108,42 @@ Information testRice(AudioFile<double> audioFile , const std::string & audioFile
 }
 
 
+Information testRiceStereo(const AudioFile<double>  & audioFile , const std::string & audioFileName){
+    Information information;
+    information.name = audioFileName;
+
+    auto converted = convertTo16bit(audioFile.samples);
+
+    auto encodedDifferential = encodeDifferential(converted);
+    information.entropyLeft = zeroOrderEntropy(encodedDifferential[0]);
+
+
+    auto unsignedDifferentialSamples = convertToUnsigned(encodedDifferential);
+
+    auto encodedRice = encodeRice(unsignedDifferentialSamples,audioFileName);
+
+    auto decodedRice = decodeRiceStereo(audioFileName);
+    auto decodeRiceDifferential = decodeDifferential(convertToSigned(decodedRice));
+    printf("File %s left channel Rice`a decode test: ",audioFileName.c_str());
+    testDecode(converted,decodeRiceDifferential);
+
+
+    information.entropyRight = zeroOrderEntropy(encodedDifferential[1]);
+
+
+
+    information.averageBitLength = (double)(encodedRice)/(2*audioFile.getNumSamplesPerChannel());
+
+    information.entropy =( information.entropyRight + information.entropyLeft)/2;
+
+    information.efficiency = (information.entropy/information.averageBitLength)*100;
+
+    return information;
+
+
+
+}
+
 
 
 
@@ -118,14 +153,17 @@ int main() {
 
     std::vector<Information> information;
 
-    audioFile.load(".//audio//Layla.wav");
+
+    audioFile.load(".//audio//velvet.wav");
+    auto encoded = encodeDifferential(audioFile.samples);
+
 
     std::filesystem::path directoryPath = ".//audio";
 
     if(std::filesystem::exists(directoryPath) && std::filesystem::is_directory(directoryPath)){
         for(const auto & entry : std::filesystem::directory_iterator(directoryPath)){
             audioFile.load(entry.path().string());
-            information.push_back(testRice(audioFile,entry.path().filename().string()));
+            information.push_back(testRiceStereo(audioFile,entry.path().filename().string()));
         }
     } else{
         std::cerr << "Directory does not exist or is not a directory!" <<std::endl;
@@ -135,7 +173,7 @@ int main() {
 //
 //    information.push_back(testRice(audioFile,"Layla"));
 //
-//    audioFile.load(".//audio//velvet.wav");
+
 //    information.push_back(testRice(audioFile,"velvet"));
 //
 //    audioFile.load(".//audio//ATrain.wav");

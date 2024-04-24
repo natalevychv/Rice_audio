@@ -49,12 +49,12 @@
 	"kind" : "codemodel",
 	"paths" : 
 	{
-		"build" : "D:/Univ/Semestr-4/teoria informacji i kodowanie/rice_audio/cmake-build-debug",
-		"source" : "D:/Univ/Semestr-4/teoria informacji i kodowanie/rice_audio"
+		"build" : "I:/Teoria informacji i kodowania/Rice_audio/cmake-build-debug",
+		"source" : "I:/Teoria informacji i kodowania/Rice_audio"
 	},
 	"version" : 
 	{
 		"major" : 2,
-		"minor" : 5
+		"minor" : 6
 	}
 }
