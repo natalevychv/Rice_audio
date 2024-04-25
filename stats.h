@@ -63,7 +63,7 @@ bool testDecode(std::vector<std::vector<T>> original, std::vector<std::vector<T>
     }
     int problems = 0;
     if(!numberOfFail) {
-        for (char channel = 0; channel < 2; channel++) {
+        for (int channel = 0; channel < 2; channel++) {
             for (int i = 0; i < size; i++) {
                 if (original[channel][i] != decoded[channel][i]) {
                     std::cout << "Failed: Sample nr " << i << " in channel "<<channel<<" in decoded data " << decoded[channel][i] << " not equal to original "

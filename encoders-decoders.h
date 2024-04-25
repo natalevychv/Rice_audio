@@ -33,9 +33,9 @@ std::vector<T> encodeDifferential(std::vector<T> samples){
 template <typename T>
 std::vector<std::vector<T>> encodeDifferential(std::vector<std::vector<T>> samples){
     int size = samples[0].size();
-    std::vector<std::vector<T>> encoded{};
-    encoded[0] = std::vector<T>();
-    encoded[1] = std::vector<T>();
+    std::vector<std::vector<T>> encoded(2,std::vector<T>(0,0));
+    encoded[0].reserve(size);
+    encoded[1].reserve(size);
 
 
     for(int channel = 0; channel < samples.size(); channel++){
@@ -67,8 +67,7 @@ std::vector<T> decodeDifferential(std::vector<T> encodedSamples){
 template <typename T>
 std::vector<std::vector<T>> decodeDifferential(std::vector<std::vector<T>> encodedSamples){
     int size = encodedSamples[0].size();
-    std::vector<std::vector<T>>  decoded;
-    decoded.reserve(encodedSamples.size());
+    std::vector<std::vector<T>>  decoded(2,std::vector<T>(0,0));
     decoded[0].reserve(size);
     decoded[1].reserve(size);
 
@@ -154,26 +153,30 @@ unsigned long long encodeRice(std::vector<std::vector<T>> samples,const std::str
     for( unsigned int sample = 0; sample < originalSize; sample++)
     for( unsigned char channel = 0; channel < 2; channel++){
 
-        if( channel == 0)
+        if( channel == 0){
             u = floor(samples[channel][sample]/twoPowKLeft);
-        else
+            k= kLeft;
+        }
+        else{
             u = floor(samples[channel][sample]/twoPowKRight);
+            k = kRight;
+        }
 
         writeUnary(outFile,u);
 
         bitsLength+= u + 1;
 
-        if (kLeft != 0){
+        if (k != 0){
             if(channel == 0){
-                v = sample - u*twoPowKLeft;
+                v = samples[channel][sample] - u*twoPowKLeft;
                 bitsLength += kLeft;
             }
             else {
-                v = sample - u * twoPowKRight;
+                v = samples[channel][sample] - u * twoPowKRight;
                 bitsLength+=kRight;
             }
 
-            writeBinary(outFile, v, kLeft);
+            writeBinary(outFile, v, k);
         }
 
 
@@ -256,7 +259,7 @@ std::vector<std::vector<unsigned short >> decodeRiceStereo( const std::string & 
     unsigned char kRight = k& 0xF;
 
 
-    std::vector<std::vector<unsigned short>> decoded{};
+    std::vector<std::vector<unsigned short>> decoded(2,std::vector<unsigned short>(0,0));
     decoded[0].reserve(allocationSize);
     decoded[1].reserve(allocationSize);
 
@@ -268,6 +271,11 @@ std::vector<std::vector<unsigned short >> decodeRiceStereo( const std::string & 
     bool isLeft = true;
 
     while(true) {
+        if(isLeft){
+            k = kLeft;
+        }else{
+            k = kRight;
+        }
         u = 0;
         bit = readBit(inFile);
         while(bit == 0){
