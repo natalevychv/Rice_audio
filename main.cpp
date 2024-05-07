@@ -151,6 +151,10 @@ Information testGolombStereo(const AudioFile<double>  & audioFile , const std::s
     information.name = audioFileName;
 
     auto converted = convertTo16bit(audioFile.samples);
+<<<<<<< HEAD
+=======
+    auto convertedMono = convertTo16bit(audioFile.samples[0]);
+>>>>>>> 2fcf7951383f28cff52b4015ac3fed6022743864
 
     auto encodedDifferential = encodeDifferential(converted);
     information.entropyLeft = zeroOrderEntropy(encodedDifferential[0]);
@@ -162,7 +166,11 @@ Information testGolombStereo(const AudioFile<double>  & audioFile , const std::s
 
     auto decodedGolomb = decodeGolombStereo(audioFileName);
     auto decodeGolombDifferential = decodeDifferential(convertToSigned(decodedGolomb));
+<<<<<<< HEAD
     printf("File %s  Golomb decode test: ",audioFileName.c_str());
+=======
+    printf("File %s  Rice`a decode test: ",audioFileName.c_str());
+>>>>>>> 2fcf7951383f28cff52b4015ac3fed6022743864
     testDecode(converted,decodeGolombDifferential);
 
 
@@ -192,6 +200,7 @@ int main() {
 
 
     audioFile.load(".//audio//ATrain.wav");
+<<<<<<< HEAD
 //    information.push_back(testGolombStereo(audioFile,"ATrain.waw"));
 
 
@@ -207,6 +216,22 @@ int main() {
     } else{
         std::cerr << "Directory does not exist or is not a directory!" <<std::endl;
     }
+=======
+    information.push_back(testGolombStereo(audioFile,"ATrain.waw"));
+
+
+//    std::filesystem::path directoryPath = ".//audio";
+//
+//    if(std::filesystem::exists(directoryPath) && std::filesystem::is_directory(directoryPath)){
+//        for(const auto & entry : std::filesystem::directory_iterator(directoryPath)){
+//            audioFile.load(entry.path().string());
+////            information.push_back(testRice(audioFile,entry.path().filename().string()));
+//            information.push_back(testRiceStereo(audioFile,entry.path().filename().string()));
+//        }
+//    } else{
+//        std::cerr << "Directory does not exist or is not a directory!" <<std::endl;
+//    }
+>>>>>>> 2fcf7951383f28cff52b4015ac3fed6022743864
 
 
 
