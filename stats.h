@@ -20,7 +20,7 @@ bool testDecode(std::vector<T> original, std::vector<T> decoded){
     bool numberOfFail = false;
     int size = original.size();
     if(size != decoded.size()){
-        std::cout<<"Failed: decoded size not equals original size"<<std::endl;
+        std::cout<<"Failed: decoded size"<<decoded.size()<<" not equals original size "<<size<<std::endl;
         return false;
     }
     int problems = 0;
@@ -54,7 +54,7 @@ bool testDecode(std::vector<std::vector<T>> original, std::vector<std::vector<T>
     bool numberOfFail = false;
     int size = original[0].size();
     if(size != decoded[0].size()){
-        std::cout<<"Failed: decoded size  in  left channel not equals original size"<<std::endl;
+        std::cout<<"Failed: decoded size "<<decoded[0].size()<<" not equals original size "<<size<<std::endl;
         return false;
     }
     if(size != decoded[1].size()){
@@ -140,4 +140,11 @@ double findDistributionRice(std::vector<T> samples){
 
 char kValueRice(double p){
     return ceil(log2((log2((sqrt(5)-1)/2))/log2(p)));
+}
+
+
+
+
+unsigned int mValueGolomb(double p){
+    return  ceil(-(log10(1+p)/log10(p)));
 }
