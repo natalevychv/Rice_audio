@@ -22,7 +22,7 @@ void printInfo(const std::vector<Information> & information){
     }
 
     Information summary;
-    summary.name = "Mean";
+    summary.name = "Average";
     printf("\n");
     for(auto info:information){
 
@@ -113,6 +113,7 @@ Information testRiceStereo(const AudioFile<double>  & audioFile , const std::str
     information.name = audioFileName;
 
     auto converted = convertTo16bit(audioFile.samples);
+    auto convertedMono = convertTo16bit(audioFile.samples[0]);
 
     auto encodedDifferential = encodeDifferential(converted);
     information.entropyLeft = zeroOrderEntropy(encodedDifferential[0]);
@@ -124,7 +125,7 @@ Information testRiceStereo(const AudioFile<double>  & audioFile , const std::str
 
     auto decodedRice = decodeRiceStereo(audioFileName);
     auto decodeRiceDifferential = decodeDifferential(convertToSigned(decodedRice));
-    printf("File %s left channel Rice`a decode test: ",audioFileName.c_str());
+    printf("File %s  Rice`a decode test: ",audioFileName.c_str());
     testDecode(converted,decodeRiceDifferential);
 
 
@@ -145,6 +146,43 @@ Information testRiceStereo(const AudioFile<double>  & audioFile , const std::str
 }
 
 
+Information testGolombStereo(const AudioFile<double>  & audioFile , const std::string & audioFileName){
+    Information information;
+    information.name = audioFileName;
+
+    auto converted = convertTo16bit(audioFile.samples);
+    auto convertedMono = convertTo16bit(audioFile.samples[0]);
+
+    auto encodedDifferential = encodeDifferential(converted);
+    information.entropyLeft = zeroOrderEntropy(encodedDifferential[0]);
+
+
+    auto unsignedDifferentialSamples = convertToUnsigned(encodedDifferential);
+
+    auto encodedGolomb = encodeGolomb(unsignedDifferentialSamples,audioFileName);
+
+    auto decodedGolomb = decodeGolombStereo(audioFileName);
+    auto decodeGolombDifferential = decodeDifferential(convertToSigned(decodedGolomb));
+    printf("File %s  Rice`a decode test: ",audioFileName.c_str());
+    testDecode(converted,decodeGolombDifferential);
+
+
+    information.entropyRight = zeroOrderEntropy(encodedDifferential[1]);
+
+
+
+    information.averageBitLength = (double)(encodedGolomb)/(2*audioFile.getNumSamplesPerChannel());
+
+    information.entropy =( information.entropyRight + information.entropyLeft)/2;
+
+    information.efficiency = (information.entropy/information.averageBitLength)*100;
+
+    return information;
+
+
+
+}
+
 
 
 int main() {
@@ -154,61 +192,31 @@ int main() {
     std::vector<Information> information;
 
 
-    audioFile.load(".//audio//velvet.wav");
-    auto encoded = encodeDifferential(audioFile.samples);
+    audioFile.load(".//audio//ATrain.wav");
+    information.push_back(testGolombStereo(audioFile,"ATrain.waw"));
 
 
-    std::filesystem::path directoryPath = ".//audio";
+//    std::filesystem::path directoryPath = ".//audio";
+//
+//    if(std::filesystem::exists(directoryPath) && std::filesystem::is_directory(directoryPath)){
+//        for(const auto & entry : std::filesystem::directory_iterator(directoryPath)){
+//            audioFile.load(entry.path().string());
+////            information.push_back(testRice(audioFile,entry.path().filename().string()));
+//            information.push_back(testRiceStereo(audioFile,entry.path().filename().string()));
+//        }
+//    } else{
+//        std::cerr << "Directory does not exist or is not a directory!" <<std::endl;
+//    }
 
-    if(std::filesystem::exists(directoryPath) && std::filesystem::is_directory(directoryPath)){
-        for(const auto & entry : std::filesystem::directory_iterator(directoryPath)){
-            audioFile.load(entry.path().string());
-            information.push_back(testRiceStereo(audioFile,entry.path().filename().string()));
-        }
-    } else{
-        std::cerr << "Directory does not exist or is not a directory!" <<std::endl;
-    }
 
-//
-//
-//    information.push_back(testRice(audioFile,"Layla"));
-//
 
-//    information.push_back(testRice(audioFile,"velvet"));
-//
-//    audioFile.load(".//audio//ATrain.wav");
-//    information.push_back(testRice(audioFile,"ATrain"));
-//
-//    audioFile.load(".//audio//female_speech.wav");
-//    information.push_back(testRice(audioFile,"female_speech"));
-//
-//    audioFile.load(".//audio//male_speech.wav");
-//    information.push_back(testRice(audioFile,"male_speech"));
-//
-//    audioFile.load(".//audio//TomsDiner.wav");
-//    information.push_back(testRice(audioFile,"TomsDiner"));
+    printf("\n");
+
+
 
 
     printInfo(information);
 
-
-
-//    auto converted = convertTo16bit(audioFile.samples[0]);
-//
-//    auto encoded = encodeDifferential(converted);
-//
-//
-//
-//    auto unsignedDifferentialSamples = convertToUnsigned(encoded);
-//
-//    auto encodedRice = encodeRice(unsignedDifferentialSamples,"ATrain");
-//
-//
-//    auto decodedRice = decodeRice("ATrain");
-//
-//
-//
-//    testDecode(unsignedDifferentialSamples,decodedRice);
 
 
 
