@@ -141,3 +141,10 @@ double findDistributionRice(std::vector<T> samples){
 char kValueRice(double p){
     return ceil(log2((log2((sqrt(5)-1)/2))/log2(p)));
 }
+
+
+
+
+unsigned int mValueGolomb(double p){
+    return  ceil(-(log10(1+p)/log10(p)));
+}

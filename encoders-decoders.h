@@ -305,3 +305,168 @@ std::vector<std::vector<unsigned short >> decodeRiceStereo( const std::string & 
 
     return decoded;
 }
+
+
+
+
+
+
+
+
+template <typename T>
+unsigned long long encodeGolomb(std::vector<std::vector<T>> samples,const std::string & name){
+    std::ofstream outFile(".//golFiles//"+name+".dat", std::ios::binary);
+
+    if (!outFile.is_open()) {
+        std::cerr << "Error opening file!" << std::endl;
+        return 0;
+    }
+
+
+    auto mLeft =mValueGolomb(findDistributionRice(samples[0]));
+    auto mRight = mValueGolomb(findDistributionRice(samples[1]));
+    unsigned long long originalSize = samples[0].size();
+    unsigned int pow214 =  16384;
+    if( mLeft > pow214) mLeft = pow214;
+    if( mRight > pow214) mRight = pow214;
+    unsigned int m = (((mLeft-1)&0xFF)<<16) + ((mRight-1)&0xFF);
+
+    outFile.write(reinterpret_cast<const char *> (&originalSize),sizeof(originalSize));
+    outFile.write(reinterpret_cast<const char*>(&m), sizeof(m));
+
+    unsigned long long bitsLength =0;
+
+    unsigned short kLeft = ceil(log2(mLeft));
+    unsigned short kRight = ceil(log2(mRight));
+    auto k =kLeft;
+
+
+    unsigned int u = 0;
+    unsigned int v = 0;
+
+
+    for( unsigned int sample = 0; sample < originalSize; sample++)
+        for( unsigned char channel = 0; channel < 2; channel++){
+
+            if( channel == 0){
+                m= mLeft;
+                k= kLeft;
+                u = floor(samples[channel][sample]/m);
+            }
+            else{
+                m = mRight;
+                k = kRight;
+                u = floor(samples[channel][sample]/m);
+            }
+
+            writeUnary(outFile,u);
+
+            bitsLength+= u + 1;
+
+            if (m != 0){
+                v = samples[channel][sample] - u * m;
+
+                auto l = pow(2,k) - m;
+
+                if( v < l){
+                    writeBinary(outFile, v, k-1);
+                    bitsLength+=k-1;
+                }else{
+                    writeBinary(outFile,v+l,k);
+                    bitsLength+=k;
+                }
+            }
+
+
+        }
+
+    writeBit(outFile, false,true);
+    outFile.close();
+
+    return bitsLength;
+
+}
+
+
+
+
+std::vector<std::vector<unsigned short >> decodeGolombStereo( const std::string & fileName){
+    std::ifstream inFile(".//golFiles//"+fileName+".dat", std::ios::binary);
+
+    if (!inFile.is_open()) {
+        throw std::ios_base::failure("Error opening file for reading.");
+    }
+
+    unsigned long long allocationSize;
+
+    inFile.read(reinterpret_cast<char *>(&allocationSize),sizeof(allocationSize));
+    unsigned int m;
+    inFile.read(reinterpret_cast<char *> (&m),sizeof(m));
+
+    unsigned int mLeft = ((m>>16) & 0xFF ) +1;
+    unsigned int mRight = (m & 0xFF )+1 ;
+
+    unsigned char kLeft = ceil(log2(mLeft));
+    unsigned char kRight = ceil(log2(mRight));
+    auto k =kLeft;
+
+    std::vector<std::vector<unsigned short>> decoded(2,std::vector<unsigned short>(0,0));
+    decoded[0].reserve(allocationSize);
+    decoded[1].reserve(allocationSize);
+
+    unsigned int u = 0;
+    unsigned int v = 0;
+    char bit;
+    char vBitPos;
+    unsigned short n;
+    bool isLeft = true;
+
+    while(true) {
+        if(isLeft){
+            k = kLeft;
+            m = mLeft;
+        }else{
+            k = kRight;
+            m = mRight;
+        }
+        u = 0;
+        bit = readBit(inFile);
+        while(bit == 0){
+            u++;
+            bit = readBit(inFile);
+        }
+        if(bit == 2){
+            break;
+        }
+        vBitPos = k-1-1;
+        v = 0;
+        unsigned int l = pow(2,k) - m;
+
+        for(char i = 0; i<k;i++){
+            bit = readBit(inFile);
+            v |= (bit<<vBitPos);
+            vBitPos--;
+            if(vBitPos == 0){
+                if(v < l){
+                    break;
+                }else{
+                    v<<=1;
+                    bit = readBit(inFile);
+                    v+=bit;
+                    v-=l;
+                }
+            }
+        }
+        n = u * m + v;
+        if(isLeft)
+            decoded[0].push_back(n);
+        else
+            decoded[1].push_back(n);
+
+        isLeft = !isLeft;
+    }
+    inFile.close();
+
+    return decoded;
+}
+
