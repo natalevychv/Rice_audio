@@ -329,13 +329,11 @@ unsigned long long encodeGolomb(std::vector<std::vector<T>> samples,const std::s
     unsigned int pow214 =  16384;
     if( mLeft > pow214) mLeft = pow214;
     if( mRight > pow214) mRight = pow214;
-<<<<<<< HEAD
+
     unsigned int m = 0;
     m |= (((mLeft-1)&0xFFFF)<<16);
     m|=mRight - 1;
-=======
-    unsigned int m = (((mLeft-1)&0xFF)<<16) + ((mRight-1)&0xFF);
->>>>>>> 2fcf7951383f28cff52b4015ac3fed6022743864
+
 
     outFile.write(reinterpret_cast<const char *> (&originalSize),sizeof(originalSize));
     outFile.write(reinterpret_cast<const char*>(&m), sizeof(m));
@@ -372,21 +370,17 @@ unsigned long long encodeGolomb(std::vector<std::vector<T>> samples,const std::s
             if (m != 0){
                 v = samples[channel][sample] - u * m;
 
-<<<<<<< HEAD
+
                 unsigned int short l = pow(2,k) - m;
-=======
-                auto l = pow(2,k) - m;
->>>>>>> 2fcf7951383f28cff52b4015ac3fed6022743864
+
 
                 if( v < l){
                     writeBinary(outFile, v, k-1);
                     bitsLength+=k-1;
                 }else{
-<<<<<<< HEAD
+
                     writeBinary(outFile,(v+l),k);
-=======
-                    writeBinary(outFile,v+l,k);
->>>>>>> 2fcf7951383f28cff52b4015ac3fed6022743864
+
                     bitsLength+=k;
                 }
             }
@@ -417,19 +411,13 @@ std::vector<std::vector<unsigned short >> decodeGolombStereo( const std::string 
     unsigned int m;
     inFile.read(reinterpret_cast<char *> (&m),sizeof(m));
 
-<<<<<<< HEAD
+
     unsigned int mLeft = ((m&0xFFFF0000) >> 16) + 1;
     unsigned int mRight = (m & 0xFFFF )+1 ;
 
     unsigned short kLeft = ceil(log2(mLeft));
     unsigned short kRight = ceil(log2(mRight));
-=======
-    unsigned int mLeft = ((m>>16) & 0xFF ) +1;
-    unsigned int mRight = (m & 0xFF )+1 ;
 
-    unsigned char kLeft = ceil(log2(mLeft));
-    unsigned char kRight = ceil(log2(mRight));
->>>>>>> 2fcf7951383f28cff52b4015ac3fed6022743864
     auto k =kLeft;
 
     std::vector<std::vector<unsigned short>> decoded(2,std::vector<unsigned short>(0,0));
@@ -460,32 +448,22 @@ std::vector<std::vector<unsigned short >> decodeGolombStereo( const std::string 
         if(bit == 2){
             break;
         }
-<<<<<<< HEAD
+
         vBitPos = k-1-1;
         v = 0;
         unsigned int l = pow(2,k) - m;
 
         for(short i = 0; i < k-1;i++){
-=======
-        vBitPos = k-1;
-        v = 0;
-        unsigned int l = pow(2,k) - m;
 
-        for(char i = 0; i<k;i++){
->>>>>>> 2fcf7951383f28cff52b4015ac3fed6022743864
             bit = readBit(inFile);
             v |= (bit<<vBitPos);
             vBitPos--;
         }
-<<<<<<< HEAD
+
         if(v >= l){
             bit = readBit(inFile);
             v = 2 * v + bit - l;
-=======
-        if(v > l){
-            bit = readBit(inFile);
-            v+=bit - l;
->>>>>>> 2fcf7951383f28cff52b4015ac3fed6022743864
+
         }
         n = u * m + v;
         if(isLeft)
