@@ -151,20 +151,25 @@ Information testGolombStereo(const AudioFile<double>  & audioFile , const std::s
     information.name = audioFileName;
 
     auto converted = convertTo16bit(audioFile.samples);
-    auto convertedMono = convertTo16bit(audioFile.samples[0]);
+
 
     auto encodedDifferential = encodeDifferential(converted);
     information.entropyLeft = zeroOrderEntropy(encodedDifferential[0]);
 
 
     auto unsignedDifferentialSamples = convertToUnsigned(encodedDifferential);
+    plot(unsignedDifferentialSamples[0], audioFileName);
 
-    auto encodedGolomb = encodeGolomb(unsignedDifferentialSamples,audioFileName);
 
-    auto decodedGolomb = decodeGolombStereo(audioFileName);
-    auto decodeGolombDifferential = decodeDifferential(convertToSigned(decodedGolomb));
-    printf("File %s  Rice`a decode test: ",audioFileName.c_str());
-    testDecode(converted,decodeGolombDifferential);
+    auto encodedGolomb = encodeGolomb(unsignedDifferentialSamples,9,audioFileName);
+    std::cout<<"HERE\n";
+
+//    auto decodedGolomb = decodeGolombStereo(audioFileName);
+//    auto decodeGolombDifferential = decodeDifferential(convertToSigned(decodedGolomb));
+//
+//    printf("File %s  Golomb decode test: ",audioFileName.c_str());
+//
+//    testDecode(converted,decodeGolombDifferential);
 
 
     information.entropyRight = zeroOrderEntropy(encodedDifferential[1]);
@@ -193,20 +198,23 @@ int main() {
 
 
     audioFile.load(".//audio//ATrain.wav");
-    information.push_back(testGolombStereo(audioFile,"ATrain.waw"));
+
+//    information.push_back(testGolombStereo(audioFile,"ATrain.waw"));
 
 
-//    std::filesystem::path directoryPath = ".//audio";
-//
-//    if(std::filesystem::exists(directoryPath) && std::filesystem::is_directory(directoryPath)){
-//        for(const auto & entry : std::filesystem::directory_iterator(directoryPath)){
-//            audioFile.load(entry.path().string());
-////            information.push_back(testRice(audioFile,entry.path().filename().string()));
+    std::filesystem::path directoryPath = ".//audio";
+
+    if(std::filesystem::exists(directoryPath) && std::filesystem::is_directory(directoryPath)){
+        for(const auto & entry : std::filesystem::directory_iterator(directoryPath)){
+            audioFile.load(entry.path().string());
+//            information.push_back(testRice(audioFile,entry.path().filename().string()));
 //            information.push_back(testRiceStereo(audioFile,entry.path().filename().string()));
-//        }
-//    } else{
-//        std::cerr << "Directory does not exist or is not a directory!" <<std::endl;
-//    }
+            information.push_back(testGolombStereo(audioFile,entry.path().filename().string()));
+        }
+    } else{
+        std::cerr << "Directory does not exist or is not a directory!" <<std::endl;
+    }
+
 
 
 

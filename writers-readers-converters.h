@@ -3,6 +3,7 @@
 //
 
 #include <fstream>
+#include <utility>
 #include <vector>
 #include <cmath>
 
@@ -186,4 +187,32 @@ char readBit(std::istream& stream){
 
     return bit;
 
+}
+
+
+void writeToFile(std::vector<unsigned short> samples, std::string fileName){
+    std::ofstream filex("pointsX.txt");
+    int stop = 0;
+    if(filex.is_open()){
+        std::string temp;
+        for(const auto & sample: samples ){
+            stop++;
+            if(stop > 1000) break;
+            temp = std::to_string(sample) + ", " ;
+            filex<<temp;
+        }
+    }
+    filex.close();
+
+    std::ofstream filen("fileN.txt");
+    if(filen.is_open()){
+        filen<<fileName;
+    }
+    filen.close();
+}
+
+
+void plot(std::vector<unsigned short> x, std::string fileName){
+    writeToFile(std::move(x),std::move(fileName));
+    system("plotPoints.py");
 }

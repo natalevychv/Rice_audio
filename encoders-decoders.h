@@ -329,7 +329,11 @@ unsigned long long encodeGolomb(std::vector<std::vector<T>> samples,const std::s
     unsigned int pow214 =  16384;
     if( mLeft > pow214) mLeft = pow214;
     if( mRight > pow214) mRight = pow214;
-    unsigned int m = (((mLeft-1)&0xFF)<<16) + ((mRight-1)&0xFF);
+
+    unsigned int m = 0;
+    m |= (((mLeft-1)&0xFFFF)<<16);
+    m|=mRight - 1;
+
 
     outFile.write(reinterpret_cast<const char *> (&originalSize),sizeof(originalSize));
     outFile.write(reinterpret_cast<const char*>(&m), sizeof(m));
@@ -366,13 +370,17 @@ unsigned long long encodeGolomb(std::vector<std::vector<T>> samples,const std::s
             if (m != 0){
                 v = samples[channel][sample] - u * m;
 
-                auto l = pow(2,k) - m;
+
+                unsigned int short l = pow(2,k) - m;
+
 
                 if( v < l){
                     writeBinary(outFile, v, k-1);
                     bitsLength+=k-1;
                 }else{
-                    writeBinary(outFile,v+l,k);
+
+                    writeBinary(outFile,(v+l),k);
+
                     bitsLength+=k;
                 }
             }
@@ -403,11 +411,13 @@ std::vector<std::vector<unsigned short >> decodeGolombStereo( const std::string 
     unsigned int m;
     inFile.read(reinterpret_cast<char *> (&m),sizeof(m));
 
-    unsigned int mLeft = ((m>>16) & 0xFF ) +1;
-    unsigned int mRight = (m & 0xFF )+1 ;
 
-    unsigned char kLeft = ceil(log2(mLeft));
-    unsigned char kRight = ceil(log2(mRight));
+    unsigned int mLeft = ((m&0xFFFF0000) >> 16) + 1;
+    unsigned int mRight = (m & 0xFFFF )+1 ;
+
+    unsigned short kLeft = ceil(log2(mLeft));
+    unsigned short kRight = ceil(log2(mRight));
+
     auto k =kLeft;
 
     std::vector<std::vector<unsigned short>> decoded(2,std::vector<unsigned short>(0,0));
@@ -438,24 +448,22 @@ std::vector<std::vector<unsigned short >> decodeGolombStereo( const std::string 
         if(bit == 2){
             break;
         }
+
         vBitPos = k-1-1;
         v = 0;
         unsigned int l = pow(2,k) - m;
 
-        for(char i = 0; i<k;i++){
+        for(short i = 0; i < k-1;i++){
+
             bit = readBit(inFile);
             v |= (bit<<vBitPos);
             vBitPos--;
-            if(vBitPos == 0){
-                if(v < l){
-                    break;
-                }else{
-                    v<<=1;
-                    bit = readBit(inFile);
-                    v+=bit;
-                    v-=l;
-                }
-            }
+        }
+
+        if(v >= l){
+            bit = readBit(inFile);
+            v = 2 * v + bit - l;
+
         }
         n = u * m + v;
         if(isLeft)
@@ -469,4 +477,136 @@ std::vector<std::vector<unsigned short >> decodeGolombStereo( const std::string 
 
     return decoded;
 }
+
+
+
+
+template <typename T>
+unsigned long long encodeGolomb(std::vector<std::vector<T>> samples,unsigned int fragmentSizePower,const std::string & name){
+    std::ofstream outFile(".//golFiles//"+name+".dat", std::ios::binary);
+
+    if (!outFile.is_open()) {
+        std::cerr << "Error opening file!" << std::endl;
+        return 0;
+    }
+
+    unsigned long long originalSize = samples[0].size();
+    unsigned long fragmentSize  = pow(2,fragmentSizePower);
+
+
+
+    outFile.write(reinterpret_cast<const char *> (&originalSize),sizeof(originalSize));
+    outFile.write(reinterpret_cast<const char *> (&fragmentSizePower),sizeof(fragmentSizePower));
+
+    unsigned long long bitsLength =0;
+    unsigned long long vectorIterator = 0;
+
+
+    unsigned int mLeft = 0;
+    unsigned int mRight = 0;
+    unsigned int pow214 =  16384;
+    unsigned int m = 0;
+
+
+
+
+
+
+
+    unsigned short kLeft = 0;// = ceil(log2(mLeft));
+    unsigned short kRight = 0;// = ceil(log2(mRight));
+    unsigned short k = 0;// =kLeft;
+
+
+    unsigned int u = 0;
+    unsigned int v = 0;
+    unsigned int fragmentCounter = fragmentSize;
+
+
+    for( unsigned int sample = 0; sample < originalSize; sample++, fragmentCounter++) {
+        for (unsigned char channel = 0; channel < 2; channel++) {
+
+            if(fragmentCounter  == fragmentSize){
+                fragmentCounter = 0;
+
+                std::vector<int> subVectorLeft;
+                std::vector<int> subVectorRight;
+                if(fragmentSize+vectorIterator < originalSize) {
+                    subVectorLeft = {samples[0].begin() + vectorIterator,
+                                     samples[0].begin() + vectorIterator + fragmentSize};
+                    subVectorRight = {samples[1].begin() + vectorIterator,
+                                     samples[1].begin() + vectorIterator + fragmentSize};
+
+                }
+                else{
+                    subVectorLeft = {samples[0].begin() + vectorIterator, samples[0].end() };
+                    subVectorRight = {samples[1].begin() + vectorIterator, samples[1].end() };
+                }
+                mLeft = mValueGolomb(findDistributionRice(subVectorLeft));
+
+                mRight = mValueGolomb(findDistributionRice(subVectorRight));
+
+                vectorIterator += fragmentSize;
+
+
+                if( mLeft > pow214) mLeft = pow214;
+                if( mRight > pow214) mRight = pow214;
+
+                m |= (((mLeft-1)&0xFFFF)<<16);
+                m|=mRight - 1;
+
+                writeBinary(outFile,m,32);
+
+
+                kLeft = ceil(log2(mLeft));
+                kRight = ceil(log2(mRight));
+
+                bitsLength+= 32;
+
+            }
+
+            if (channel == 0) {
+                m = mLeft;
+                k = kLeft;
+                u = floor(samples[channel][sample] / m);
+            } else {
+                m = mRight;
+                k = kRight;
+                u = floor(samples[channel][sample] / m);
+            }
+
+            writeUnary(outFile, u);
+
+            bitsLength += u + 1;
+
+            if (m != 0) {
+                v = samples[channel][sample] - u * m;
+
+
+                unsigned int short l = pow(2, k) - m;
+
+
+                if (v < l) {
+                    writeBinary(outFile, v, k - 1);
+                    bitsLength += k - 1;
+                } else {
+
+                    writeBinary(outFile, (v + l), k);
+
+                    bitsLength += k;
+                }
+            }
+
+
+        }
+    }
+
+    writeBit(outFile, false,true);
+    outFile.close();
+
+    return bitsLength;
+
+}
+
+
 
