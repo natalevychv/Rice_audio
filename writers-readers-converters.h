@@ -111,7 +111,7 @@ std::vector<std::vector<short>> convertToSigned(std::vector<std::vector<unsigned
 
 
     for(const auto  & channel: unsignedSamples) {
-        for (const auto & sample: channel) {\
+        for (const auto & sample: channel) {
             if(isLeft)
                 signedSamples[0].push_back((sample & 1) ? -(sample + 1) >> 1 : sample >> 1);
             else
@@ -187,6 +187,14 @@ char readBit(std::istream& stream){
 
     return bit;
 
+}
+
+unsigned int readMGolomb(std::istream & stream){
+    unsigned int m = 0;
+    for(char bitPos = 31; bitPos>=0; bitPos--){
+        m|=(readBit(stream)<<bitPos);
+    }
+    return m;
 }
 
 

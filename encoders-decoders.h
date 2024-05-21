@@ -579,7 +579,7 @@ unsigned long long encodeGolomb(std::vector<std::vector<T>> samples,unsigned int
 
             bitsLength += u + 1;
 
-            if (m != 0) {
+            if (m > 1) {
                 v = samples[channel][sample] - u * m;
 
 
@@ -610,3 +610,104 @@ unsigned long long encodeGolomb(std::vector<std::vector<T>> samples,unsigned int
 
 
 
+
+std::vector<std::vector<unsigned short >> decodeGolombStereoFrames( const std::string & fileName){
+    std::ifstream inFile(".//golFiles//"+fileName+".dat", std::ios::binary);
+
+    if (!inFile.is_open()) {
+        throw std::ios_base::failure("Error opening file for reading.");
+    }
+
+    unsigned long long allocationSize;
+
+    inFile.read(reinterpret_cast<char *>(&allocationSize),sizeof(allocationSize));
+    unsigned int fragmentSizePower;
+    inFile.read(reinterpret_cast<char *> (&fragmentSizePower),sizeof(fragmentSizePower));
+
+    unsigned int frameLength = pow(2, fragmentSizePower);
+
+
+    unsigned int m = 0;
+
+    unsigned int mLeft = 0;
+    unsigned int mRight = 0;
+
+    unsigned short kLeft = 0;
+    unsigned short kRight = 0;
+
+    auto k =kLeft;
+
+    std::vector<std::vector<unsigned short>> decoded(2,std::vector<unsigned short>(0,0));
+    decoded[0].reserve(allocationSize);
+    decoded[1].reserve(allocationSize);
+
+    unsigned int u = 0;
+    unsigned int v = 0;
+    char bit;
+    char vBitPos;
+    unsigned short n;
+    bool isLeft = true;
+    unsigned int currentSampleInFrame = frameLength;
+
+    while(true) {
+        if(currentSampleInFrame == frameLength){
+            m = readMGolomb(inFile);
+            mLeft = ((m&0xFFFF0000) >> 16) + 1;
+            mRight = (m & 0xFFFF )+1;
+            kLeft = ceil(log2(mLeft));
+            kRight = ceil(log2(mRight));
+            currentSampleInFrame = 0;
+        }
+
+
+
+        if(isLeft){
+            k = kLeft;
+            m = mLeft;
+        }else{
+            k = kRight;
+            m = mRight;
+            currentSampleInFrame++;
+        }
+        u = 0;
+        bit = readBit(inFile);
+        while(bit == 0){
+            u++;
+            bit = readBit(inFile);
+        }
+        if(bit == 2){
+            break;
+        }
+        v = 0;
+
+        if(m > 1){
+             vBitPos = k-1-1;
+
+            unsigned int l = pow(2,k) - m;
+
+             for(unsigned short i = 0; i < k-1;i++){
+
+                 bit = readBit(inFile);
+                 v |= (bit<<vBitPos);
+                 vBitPos--;
+             }
+
+            if(v >= l){
+                bit = readBit(inFile);
+                v = 2 * v + bit - l;
+
+            }
+        }
+        n = u * m + v;
+        if(isLeft)
+            decoded[0].push_back(n);
+        else
+            decoded[1].push_back(n);
+
+        isLeft = !isLeft;
+
+    }
+    inFile.close();
+
+    return decoded;
+}

@@ -162,14 +162,13 @@ Information testGolombStereo(const AudioFile<double>  & audioFile , const std::s
 
 
     auto encodedGolomb = encodeGolomb(unsignedDifferentialSamples,9,audioFileName);
-    std::cout<<"HERE\n";
 
-//    auto decodedGolomb = decodeGolombStereo(audioFileName);
-//    auto decodeGolombDifferential = decodeDifferential(convertToSigned(decodedGolomb));
-//
-//    printf("File %s  Golomb decode test: ",audioFileName.c_str());
-//
-//    testDecode(converted,decodeGolombDifferential);
+    auto decodedGolomb = decodeGolombStereoFrames(audioFileName);
+    auto decodeGolombDifferential = decodeDifferential(convertToSigned(decodedGolomb));
+
+    printf("File %s  Golomb decode test: ",audioFileName.c_str());
+
+    testDecode(converted,decodeGolombDifferential);
 
 
     information.entropyRight = zeroOrderEntropy(encodedDifferential[1]);
