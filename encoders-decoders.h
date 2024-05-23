@@ -551,7 +551,7 @@ unsigned long long encodeGolomb(std::vector<std::vector<T>> samples,unsigned int
 
                 if( mLeft > pow214) mLeft = pow214;
                 if( mRight > pow214) mRight = pow214;
-
+                m = 0;
                 m |= (((mLeft-1)&0xFFFF)<<16);
                 m|=mRight - 1;
 
