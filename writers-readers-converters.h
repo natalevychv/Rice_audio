@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 #include <cmath>
+#include <map>
 
 #ifndef RICE_AUDIO_WRITERS_READERS_CONVERTERS_H
 #define RICE_AUDIO_WRITERS_READERS_CONVERTERS_H
@@ -220,7 +221,44 @@ void writeToFile(std::vector<unsigned short> samples, std::string fileName){
 }
 
 
+void writeToFile(std::map<char, double> map, std::string fileName){
+    std::ofstream filex("pointsX.txt");
+    if(filex.is_open()){
+        std::string temp;
+        for(const auto & sample: map ){
+
+            temp = std::to_string(sample.first) + ", " ;
+            filex<<temp;
+        }
+    }
+    filex.close();
+
+    std::ofstream filey("pointsY.txt");
+
+    if(filey.is_open()){
+        std::string temp;
+        for(const auto & sample: map ){
+
+            temp = std::to_string(sample.second) + ", " ;
+            filey<<temp;
+        }
+    }
+    filey.close();
+
+    std::ofstream filen("fileN.txt");
+    if(filen.is_open()){
+        filen<<fileName;
+    }
+    filen.close();
+}
+
+
 void plot(std::vector<unsigned short> x, std::string fileName){
+    writeToFile(std::move(x),std::move(fileName));
+    system("plotPoints.py");
+}
+
+void plot(std::map<char, double > x, std::string fileName){
     writeToFile(std::move(x),std::move(fileName));
     system("plotPoints.py");
 }

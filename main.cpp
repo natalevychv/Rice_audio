@@ -12,11 +12,14 @@ struct Information {
     double entropyRight{};
     double averageBitLength{};
     double efficiency{};
-
+    unsigned int frameSizePowerOfTwo{};
+    double averageBitLengthFullFile{};
 } ;
 
+#define numOfFiles 16
+
 void printInfo(const std::vector<Information> & information){
-    printf("\tName\t\t\tEntropy Left\t Entropy Right\t  Entropy\t Average Bits Length\t Efficiency\n\t");
+    printf("Name\t\t\tAvg Bits length\t \tAvg Bits Length with frames(q=9)\t \tEfficiency\n");
     for(int i = 0; i<108; i++){
         printf("-");
     }
@@ -30,33 +33,37 @@ void printInfo(const std::vector<Information> & information){
         summary.entropyLeft+=info.entropyLeft;
         summary.entropyRight +=info.entropyRight;
         summary.averageBitLength += info.averageBitLength;
+        summary.averageBitLengthFullFile += info.averageBitLengthFullFile;
         summary.efficiency +=info.efficiency;
+        summary.frameSizePowerOfTwo+=info.frameSizePowerOfTwo;
 
 
-        printf("\t%s",info.name.c_str());
+        printf("%s",info.name.c_str());
         for(char i =0; i < (24 -info.name.size()); i++ ){
             printf(" ");
         }
-        printf("%f\t %f  \t  %f\t     %f\t \t %f %\n",info.entropyLeft,info.entropyRight,info.entropy,info.averageBitLength,info.efficiency);
+        printf("\t %f\t    \t %f\t\t\t\t %f \n",info.averageBitLengthFullFile,info.averageBitLength,info.efficiency);
     }
 
     summary.entropy /= information.size();
     summary.entropyLeft /= information.size();
     summary.entropyRight /= information.size();
     summary.averageBitLength/=information.size();
+    summary.averageBitLengthFullFile/=information.size();
     summary.efficiency /=information.size();
+    summary.frameSizePowerOfTwo /=information.size();
 
-    printf("\n\t");
+    printf("\n");
     for(int i = 0; i<108; i++){
         printf("-");
     }
     printf("\n");
 
-    printf("\t%s",summary.name.c_str());
+    printf("%s",summary.name.c_str());
     for(char i =0; i < (24 -summary.name.size()); i++ ){
         printf(" ");
     }
-    printf("%f\t %f  \t  %f\t     %f\t \t %f %\n",summary.entropyLeft,summary.entropyRight,summary.entropy,summary.averageBitLength,summary.efficiency);
+    printf("\t %f\t     \t%f\t\t\t \t%f \n",summary.averageBitLengthFullFile,summary.averageBitLength,summary.efficiency);
 
 
 }
@@ -133,6 +140,7 @@ Information testRiceStereo(const AudioFile<double>  & audioFile , const std::str
 
 
 
+
     information.averageBitLength = (double)(encodedRice)/(2*audioFile.getNumSamplesPerChannel());
 
     information.entropy =( information.entropyRight + information.entropyLeft)/2;
@@ -146,7 +154,7 @@ Information testRiceStereo(const AudioFile<double>  & audioFile , const std::str
 }
 
 
-Information testGolombStereo(const AudioFile<double>  & audioFile , const std::string & audioFileName){
+Information testGolombStereo(const AudioFile<double>  & audioFile , const std::string & audioFileName, std::map<char,double> & qAverage){
     Information information;
     information.name = audioFileName;
 
@@ -158,17 +166,29 @@ Information testGolombStereo(const AudioFile<double>  & audioFile , const std::s
 
 
     auto unsignedDifferentialSamples = convertToUnsigned(encodedDifferential);
-    plot(unsignedDifferentialSamples[0], audioFileName);
+    //plot(unsignedDifferentialSamples[0], audioFileName);
+    unsigned long long encodedGolomb = -1;
+    unsigned long long temp;
+    char q = 9;
+
+//    for(char i = 5; i<15;i++){
+        encodedGolomb = encodeGolomb(unsignedDifferentialSamples,q,audioFileName);
+//        qAverage[i]+=(double)(temp)/(2*audioFile.getNumSamplesPerChannel())/numOfFiles;
+//        if(encodedGolomb>temp){
+//            q = i;
+//            encodedGolomb = temp;
+//        }
+//    }
+    information.averageBitLengthFullFile = (double)(encodeGolomb(unsignedDifferentialSamples,audioFileName))/(2*audioFile.getNumSamplesPerChannel());
 
 
-    auto encodedGolomb = encodeGolomb(unsignedDifferentialSamples,9,audioFileName);
-
-    auto decodedGolomb = decodeGolombStereoFrames(audioFileName);
-    auto decodeGolombDifferential = decodeDifferential(convertToSigned(decodedGolomb));
-
-    printf("File %s  Golomb decode test: ",audioFileName.c_str());
-
-    testDecode(converted,decodeGolombDifferential);
+    information.frameSizePowerOfTwo = q;
+//    auto decodedGolomb = decodeGolombStereoFrames(audioFileName);
+//    auto decodeGolombDifferential = decodeDifferential(convertToSigned(decodedGolomb));
+//
+//    printf("File %s  Golomb decode test: ",audioFileName.c_str());
+//
+//    testDecode(converted,decodeGolombDifferential);
 
 
     information.entropyRight = zeroOrderEntropy(encodedDifferential[1]);
@@ -195,6 +215,11 @@ int main() {
 
     std::vector<Information> information;
 
+    std::map<char, double> qAverage;
+    for(char i = 5; i<15;++i){
+        qAverage[i] = 0;
+    }
+
 
     audioFile.load(".//audio//ATrain.wav");
 
@@ -208,12 +233,13 @@ int main() {
             audioFile.load(entry.path().string());
 //            information.push_back(testRice(audioFile,entry.path().filename().string()));
 //            information.push_back(testRiceStereo(audioFile,entry.path().filename().string()));
-            information.push_back(testGolombStereo(audioFile,entry.path().filename().string()));
+            information.push_back(testGolombStereo(audioFile,entry.path().filename().string(),qAverage));
         }
     } else{
         std::cerr << "Directory does not exist or is not a directory!" <<std::endl;
     }
 
+//    plot(qAverage,"qAverage");
 
 
 

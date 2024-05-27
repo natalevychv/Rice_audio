@@ -561,7 +561,7 @@ unsigned long long encodeGolomb(std::vector<std::vector<T>> samples,unsigned int
                 kLeft = ceil(log2(mLeft));
                 kRight = ceil(log2(mRight));
 
-                bitsLength+= 32;
+                bitsLength+= 28;
 
             }
 
